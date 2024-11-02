@@ -1,6 +1,6 @@
 package main
 
-const INTERACTION_RANGE = 0.02
+const INTERACTION_RANGE = 0.005
 const SPEED_LIMIT = 0.1
 
 const (

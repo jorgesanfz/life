@@ -2,18 +2,27 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
+	"sync"
+	"time"
 )
 
 const (
-	lifespan    = 100
-	numBeings   = 100
-	simulations = 100
+	lifespan       = 100
+	numBeings      = 100
+	numSimulations = 100
+	turnPause      = 1 * time.Second
 )
 
-func createBeings(n int) []Being {
-	beings := make([]Being, n)
-	for i := 0; i < n; i++ {
+var (
+	beings     []Being
+	beingsLock sync.Mutex
+)
+
+func createBeings() []Being {
+	beings := make([]Being, numBeings)
+	for i := 0; i < numBeings; i++ {
 		beings[i] = *NewBeing()
 	}
 	return beings
@@ -36,10 +45,11 @@ func updateBeings(beings []Being) []Being {
 }
 
 func RunSimulation() []Genes {
-	beings := createBeings(numBeings)
 	for i := 0; i < lifespan; i++ {
+		beingsLock.Lock()
 		beings = updateBeings(beings)
-		//time.Sleep(time.Millisecond)
+		beingsLock.Unlock()
+		time.Sleep(turnPause)
 	}
 
 	sort.Slice(beings, func(i, j int) bool {
@@ -57,10 +67,10 @@ func RunSimulation() []Genes {
 	return topGenes
 }
 
-func RunMultipleSimulations(n int) {
+func RunMultipleSimulations() {
 	winners := []Genes{}
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < numSimulations; i++ {
 		topGenes := RunSimulation()
 		winners = append(winners, topGenes...)
 		fmt.Printf(Purple+"Simulation %d\n", i)
@@ -71,5 +81,9 @@ func RunMultipleSimulations(n int) {
 }
 
 func main() {
-	RunMultipleSimulations(simulations)
+	//RunMultipleSimulations(simulations)
+	beings = createBeings()
+	go RunSimulation()
+	http.Handle("/beings", CorsMiddleware(http.HandlerFunc(beingsHandler)))
+	http.ListenAndServe(":8080", nil)
 }
