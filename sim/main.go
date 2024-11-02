@@ -23,7 +23,7 @@ var (
 func createBeings() []Being {
 	beings := make([]Being, numBeings)
 	for i := 0; i < numBeings; i++ {
-		beings[i] = *NewBeing()
+		beings[i] = *NewBeing(Genes{})
 	}
 	return beings
 }

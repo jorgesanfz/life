@@ -11,9 +11,10 @@ const (
 	ATTACK ACTION = iota
 	FLEE
 	COOPERATE
+	REPRODUCE
 )
 
-func Interact(a, b *Being) {
+func Interact(a, b *Being) *Being {
 	if canInteract(a, b) {
 		fmt.Printf(Yellow+"Being %s is interacting with being %s\n", a.id, b.id)
 		switch decision(a, b) {
@@ -26,8 +27,14 @@ func Interact(a, b *Being) {
 		case COOPERATE:
 			cooperate(a, b)
 			fmt.Printf(Green+"Being %s is cooperating with being %s\n", a.id, b.id)
+		case REPRODUCE:
+			child := reproduce(a, b)
+			fmt.Printf(Green+"Being %s and being %s are reproducing\n", a.id, b.id)
+			fmt.Printf(Green+"Child %s has genes %v\n", child.id, child.genes)
+			return child
 		}
 	}
+	return nil
 }
 
 func canInteract(a, b *Being) bool {
@@ -35,9 +42,26 @@ func canInteract(a, b *Being) bool {
 }
 
 func decision(a *Being, b *Being) ACTION {
-	if a.genes.Aggression > 0.5 {
+	// Calculate genetic distance between two beings
+	distance := CalculateEuclideanDistance(a.genes, b.genes)
+
+	// 1. High Status and Genetic Closeness = REPRODUCE
+	if a.status > STATUS_THRESHOLD && b.status > STATUS_THRESHOLD && distance <= GENETIC_SIMILARITY_THRESHOLD {
+		return REPRODUCE
+	}
+
+	// 2. High Genetic Similarity = COOPERATE
+	if distance <= GENETIC_SIMILARITY_THRESHOLD {
+		return COOPERATE
+	}
+
+	// 3. High Aggression and Low Genetic Similarity = ATTACK
+	if a.genes.Aggression > AGGRESSION_THRESHOLD && distance > GENETIC_SIMILARITY_THRESHOLD {
 		return ATTACK
-	} else if a.genes.Cooperation > 0.5 {
+	}
+
+	// 4. High Cooperation but Low Status or High Distance = FLEE
+	if a.genes.Cooperation > COOPERATION_THRESHOLD {
 		return COOPERATE
 	} else {
 		return FLEE
@@ -68,6 +92,14 @@ func flee(a, b *Being) {
 	fleeSpeed := 0.1
 	a.velocity.X += direction.X * fleeSpeed
 	a.velocity.Y += direction.Y * fleeSpeed
+}
+
+func reproduce(a, b *Being) *Being {
+	genes := a.genes.crossover(b.genes)
+	child := NewBeing(genes)
+	child.strength = (a.strength + b.strength) / 2
+	child.status = (a.status + b.status) / 2
+	return child
 }
 
 func cooperate(a, b *Being) {

@@ -21,15 +21,17 @@ type Being struct {
 	// maxSpeed   int
 }
 
-func NewBeing() *Being {
+func NewBeing(genes Genes) *Being {
+	if (genes == Genes{}) {
+		genes = generateRandomGenes()
+	}
 	return &Being{
 		id:       uuid.New(),
 		position: Vector{X: rand.Float64(), Y: rand.Float64()},
 		velocity: Vector{X: rand.Float64(), Y: rand.Float64()},
 		status:   20,
-		genes:    generateRandomGenes(),
+		genes:    genes,
 		strength: rand.Float32(),
-		// maxSpeed:   1,
 	}
 }
 
@@ -40,7 +42,10 @@ func (b *Being) update(beings []Being) bool {
 	}
 	b.move()
 	for _, other := range beings {
-		Interact(b, &other)
+		child := Interact(b, &other)
+		if child != nil {
+			beings = append(beings, *child)
+		}
 	}
 	return true
 }
