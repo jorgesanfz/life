@@ -14,7 +14,7 @@ type Being struct {
 	velocity Vector
 	age      int
 	status   float32
-	strength int
+	strength float32
 	//acceleration Acceleration
 	//health   int
 	// maxSpeed   int
@@ -27,7 +27,7 @@ func NewBeing() *Being {
 		velocity: Vector{X: 0, Y: 0},
 		status:   20,
 		genes:    generateRandomGenes(),
-		strength: int(rand.Float32()),
+		strength: rand.Float32(),
 		// maxSpeed:   1,
 	}
 }
