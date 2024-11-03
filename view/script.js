@@ -101,7 +101,7 @@ function drawPoints(data) {
       beingTrajectories.set(being.id, trajectory);
     }
     trajectory.push({ x, y });
-    if (trajectory.length > 3) {
+    if (trajectory.length > 20) {
       trajectory.shift(); // Keep only the last 3 positions
     }
     if (trajectory.length > 1) {

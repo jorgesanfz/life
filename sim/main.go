@@ -10,7 +10,7 @@ import (
 
 const (
 	lifespan   = 100
-	numBeings  = 10
+	numBeings  = 200
 	iterations = 100
 	turnPause  = 1000 * time.Millisecond
 )
@@ -35,10 +35,10 @@ func updateBeings(beings *[]Being) []Being {
 		beingsLock.Lock()
 		being := (*beings)[i]
 		alive, _ := being.update(*beings)
-		if len(childs) > 0 {
+		/*if len(childs) > 0 {
 			fmt.Print(Green + "New beings were born!\n")
 			*beings = append(*beings, childs...)
-		}
+		}*/
 		if alive {
 			aliveBeings = append(aliveBeings, being)
 			being.state()
