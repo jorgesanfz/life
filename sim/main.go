@@ -10,7 +10,7 @@ import (
 
 const (
 	lifespan   = 100
-	numBeings  = 100
+	numBeings  = 10
 	iterations = 100
 	turnPause  = 1000 * time.Millisecond
 )
@@ -23,7 +23,7 @@ var (
 func createBeings() []Being {
 	beings = make([]Being, numBeings)
 	for i := 0; i < numBeings; i++ {
-		beings[i] = *NewBeing(Genes{})
+		beings[i] = *NewBeing(nil)
 		beings[i].state()
 	}
 	return beings
@@ -81,7 +81,7 @@ func updateBeings(results chan<- Being) {
 	close(results) // Close the results channel after all goroutines finish
 }
 
-func RunSimulation() []Genes {
+func RunSimulation() []Gene {
 	var aliveBeings []Being
 
 	for i := 0; i < iterations; i++ {
@@ -108,7 +108,7 @@ func RunSimulation() []Genes {
 		time.Sleep(turnPause)
 	}
 
-	var topGenes []Genes
+	var topGenes []Gene
 	sort.Slice(beings, func(i, j int) bool {
 		return beings[i].status > beings[j].status
 	})
@@ -119,7 +119,7 @@ func RunSimulation() []Genes {
 
 	for _, being := range top10Percent {
 		if being.status == 100 {
-			topGenes = append(topGenes, being.genes)
+			topGenes = append(topGenes, being.genes...)
 		}
 		fmt.Printf("Top Being %s | status: %.2f | genes: %v\n", being.id, being.status, being.genes)
 	}
@@ -128,12 +128,12 @@ func RunSimulation() []Genes {
 		fmt.Printf("Bottom Being %s | status: %.2f\n", being.id, being.status)
 	}
 
-	analyse(topGenes)
+	//analyse(topGenes)
 	return topGenes
 }
 
 func RunMultipleSimulations() {
-	winners := []Genes{}
+	winners := []Gene{}
 
 	for i := 0; i < iterations; i++ {
 		topGenes := RunSimulation()
@@ -142,7 +142,8 @@ func RunMultipleSimulations() {
 		//time.Sleep(100 * time.Millisecond)
 	}
 
-	analyse(winners)
+	fmt.Printf(Cyan+"Winners: %v\n", winners)
+	//analyse(winners)
 }
 
 func main() {

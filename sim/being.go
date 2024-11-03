@@ -10,7 +10,8 @@ import (
 
 type Being struct {
 	id       uuid.UUID
-	genes    Genes
+	genes    []Gene
+	traits   Traits
 	position Vector
 	velocity Vector
 	age      int
@@ -21,16 +22,17 @@ type Being struct {
 	// maxSpeed   int
 }
 
-func NewBeing(genes Genes) *Being {
-	if (genes == Genes{}) {
-		genes = generateRandomGenes()
-	}
+func NewBeing(parents []Being) *Being {
+	individual := generateIndividual(parents)
+	fmt.Println("New being created with genes: ", individual.Genes)
+	fmt.Println("New being created with traits: ", individual.Traits)
 	return &Being{
 		id:       uuid.New(),
 		position: Vector{X: rand.Float64(), Y: rand.Float64()},
 		velocity: Vector{X: rand.Float64(), Y: rand.Float64()},
 		status:   20,
-		genes:    genes,
+		genes:    individual.Genes,
+		traits:   individual.Traits,
 		strength: rand.Float32(),
 	}
 }
@@ -110,7 +112,8 @@ func (b *Being) MarshalJSON() ([]byte, error) {
 	type Alias Being
 	return json.Marshal(&struct {
 		ID       uuid.UUID `json:"id"`
-		Genes    Genes     `json:"genes"`
+		Genes    []Gene    `json:"genes"`
+		Traits   Traits    `json:"traits"`
 		Position Vector    `json:"position"`
 		Velocity Vector    `json:"velocity"`
 		Age      int       `json:"age"`

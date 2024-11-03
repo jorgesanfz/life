@@ -11,7 +11,7 @@ window.addEventListener("resize", () => {
   canvas.height = window.innerHeight * 0.9;
 });
 
-const size_factor = 0.5;
+const size_factor = 1;
 
 // Map to store colors for each being
 const beingColors = new Map();
@@ -48,6 +48,23 @@ function getColorFromGenes(genes) {
   return color;
 }
 
+function getColorFromTraits(traits) {
+  // Map aggression to red and cooperation to green
+  const red = Math.floor((1 - traits.aggreeableness) * 255);
+  const green = Math.floor(traits.aggreeableness * 255);
+  const blue = Math.floor(traits.conscientiousness * 255);
+
+  console.log("Red:", red, "Green:", green, "Blue:", blue);
+
+  // Convert RGB values to hex format
+  const color = `#${((1 << 24) + (red << 16) + (green << 8) + blue)
+    .toString(16)
+    .slice(1)
+    .toUpperCase()}`;
+
+  return color;
+}
+
 // Function to draw the center point for each point
 function drawCenterPoint(x, y, color) {
   ctx.beginPath();
@@ -68,7 +85,8 @@ function drawPoints(data) {
     // Get or generate color for the being
     let color = beingColors.get(being.id);
     if (!color) {
-      color = getColorFromGenes(being.genes);
+      //color = getColorFromGenes(being.genes);
+      color = getColorFromTraits(being.traits);
       beingColors.set(being.id, color);
     }
 
@@ -101,7 +119,7 @@ function drawPoints(data) {
       beingTrajectories.set(being.id, trajectory);
     }
     trajectory.push({ x, y });
-    if (trajectory.length > 20) {
+    if (trajectory.length > 5) {
       trajectory.shift(); // Keep only the last 3 positions
     }
     if (trajectory.length > 1) {
