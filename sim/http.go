@@ -6,8 +6,8 @@ import (
 )
 
 func beingsHandler(w http.ResponseWriter, r *http.Request) {
-	beingsLock.RLock()
-	defer beingsLock.RUnlock()
+	//beingsLock.RLock()
+	//defer beingsLock.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(beings); err != nil {

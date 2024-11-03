@@ -59,8 +59,8 @@ func updateBeing(being Being, beingsAux []Being, results chan<- Being) {
 
 func updateBeings(results chan<- Being) {
 	var wg sync.WaitGroup
-	beingsLock.RLock()         // Acquire a read lock
-	defer beingsLock.RUnlock() // Ensure the lock is released when the function exits
+	//beingsLock.RLock()         // Acquire a read lock
+	//defer beingsLock.RUnlock() // Ensure the lock is released when the function exits
 
 	beingsAux := make([]Being, len(beings))
 	copy(beingsAux, beings)
@@ -102,9 +102,9 @@ func RunSimulation() []Gene {
 		// Use a write lock to safely update the beings slice
 		//beingsLock.Lock()
 		if len(aliveBeings) >= 50 {
-			/*sort.Slice(aliveBeings, func(i, j int) bool {
+			sort.Slice(aliveBeings, func(i, j int) bool {
 				return aliveBeings[i].status > aliveBeings[j].status
-			})*/
+			})
 			aliveBeings = aliveBeings[:50] // Limit the number of alive beings
 		}
 		beings = aliveBeings // Update the beings list

@@ -52,6 +52,11 @@ func generateIndividual(parents []Being) Individual {
 }
 
 func CalculateEuclideanDistance(g1, g2 []Gene) float32 {
+	if len(g1) != len(g2) {
+		//panic("slices g1 and g2 must have the same length")
+		return 9
+	}
+
 	var sum float32
 	for i := range g1 {
 		diff := g1[i].Value - g2[i].Value
