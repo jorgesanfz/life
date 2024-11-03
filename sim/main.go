@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	lifespan       = 100
+	lifespan       = 1000
 	numBeings      = 100
 	numSimulations = 100
-	turnPause      = 1 * time.Second
+	turnPause      = 100 * time.Millisecond
 )
 
 var (
@@ -41,10 +41,12 @@ func updateBeings(beings []Being) []Being {
 		}
 	}
 
+	fmt.Printf("Number of beings: %d\n", len(aliveBeings))
 	return aliveBeings
 }
 
 func RunSimulation() []Genes {
+
 	for i := 0; i < lifespan; i++ {
 		beingsLock.Lock()
 		beings = updateBeings(beings)
@@ -52,17 +54,34 @@ func RunSimulation() []Genes {
 		time.Sleep(turnPause)
 	}
 
+	var topGenes []Genes
+	top10Percent := beings[:len(beings)/10]
+	bottom10Percent := beings[len(beings)-len(beings)/10:]
+
 	sort.Slice(beings, func(i, j int) bool {
 		return beings[i].status > beings[j].status
 	})
 
-	top10Percent := beings[:len(beings)/10]
-	var topGenes []Genes
+	for _, being := range beings {
+		if being.status == 100 {
+			topGenes = append(topGenes, being.genes)
+		}
+	}
+
 	for _, being := range top10Percent {
 		genes := being.getGenes()
 		fmt.Printf("Being %s | status: %f | genes: %v\n", being.id, being.status, genes)
-		topGenes = append(topGenes, genes)
 	}
+
+	sort.Slice(beings, func(i, j int) bool {
+		return beings[i].status > beings[j].status
+	})
+
+	for _, being := range bottom10Percent {
+		fmt.Printf("Being %s | status: %f\n", being.id, being.status)
+	}
+
+	analyse(topGenes)
 
 	return topGenes
 }
@@ -81,7 +100,7 @@ func RunMultipleSimulations() {
 }
 
 func main() {
-	//RunMultipleSimulations(simulations)
+	//RunMultipleSimulations()
 	beings = createBeings()
 	go RunSimulation()
 	http.Handle("/beings", CorsMiddleware(http.HandlerFunc(beingsHandler)))

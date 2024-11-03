@@ -29,7 +29,7 @@ func Interact(a, b *Being) *Being {
 			fmt.Printf(Green+"Being %s is cooperating with being %s\n", a.id, b.id)
 		case REPRODUCE:
 			child := reproduce(a, b)
-			fmt.Printf(Green+"Being %s and being %s are reproducing\n", a.id, b.id)
+			fmt.Printf(Pink+"Being %s and being %s are reproducing\n", a.id, b.id)
 			fmt.Printf(Green+"Child %s has genes %v\n", child.id, child.genes)
 			return child
 		}
@@ -103,6 +103,6 @@ func reproduce(a, b *Being) *Being {
 }
 
 func cooperate(a, b *Being) {
-	a.updateStatus(0.05 * b.status)
-	b.updateStatus(0.05 * a.status)
+	a.updateStatus(0.04 * b.status)
+	b.updateStatus(0.04 * a.status)
 }

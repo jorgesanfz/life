@@ -1,6 +1,18 @@
 const canvas = document.getElementById("myCanvas");
 const ctx = canvas.getContext("2d");
 
+// Set canvas size to fill the window
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Resize canvas when the window is resized
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+const size_factor = 0.5;
+
 // Map to store colors for each being
 const beingColors = new Map();
 
@@ -17,11 +29,30 @@ function getRandomColor() {
   return color;
 }
 
+function getColorFromGenes(genes) {
+  // Map aggression to red and cooperation to green
+  const red = Math.floor(genes.aggression * 255);
+  const blue = Math.floor(genes.cooperation * 255);
+  const green = Math.floor(
+    (1 - Math.abs(genes.aggression - genes.cooperation)) * 255
+  ); // Corrected variables
+
+  console.log("Red:", red, "Green:", green, "Blue:", blue);
+
+  // Convert RGB values to hex format
+  const color = `#${((1 << 24) + (red << 16) + (green << 8) + blue)
+    .toString(16)
+    .slice(1)
+    .toUpperCase()}`;
+
+  return color;
+}
+
 // Function to draw the center point for each point
 function drawCenterPoint(x, y, color) {
   ctx.beginPath();
-  ctx.arc(x, y, 5, 0, Math.PI * 2);
-  ctx.fillStyle = color; // Set color for the center point
+  ctx.arc(x, y, size_factor * 5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
   ctx.fill();
   ctx.closePath();
 }
@@ -32,21 +63,21 @@ function drawPoints(data) {
     // Extract position and radius from the being object
     const x = being.position.X * canvas.width;
     const y = being.position.Y * canvas.height;
-    const radius = being.status / 2 || 10;
+    const radius = (being.status / 2) * size_factor || 10;
 
     // Get or generate color for the being
     let color = beingColors.get(being.id);
     if (!color) {
-      color = getRandomColor();
+      color = getColorFromGenes(being.genes);
       beingColors.set(being.id, color);
     }
 
     // Debugging output
-    console.log(
+    /*console.log(
       `Drawing being ${
         index + 1
       }: x=${x}, y=${y}, radius=${radius}, color=${color}`
-    );
+    );*/
 
     // Create a radial gradient
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
@@ -115,4 +146,4 @@ async function fetchDataAndDraw() {
 }
 
 // Call fetchDataAndDraw every second
-setInterval(fetchDataAndDraw, 1000);
+setInterval(fetchDataAndDraw, 200);

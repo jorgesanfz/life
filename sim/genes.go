@@ -7,8 +7,8 @@ import (
 )
 
 type Genes struct {
-	Aggression  float32
-	Cooperation float32
+	Aggression  float32 `json:"aggression"`
+	Cooperation float32 `json:"cooperation"`
 	// Speed       float32
 	// Strength    float32
 }

@@ -7,7 +7,7 @@ const INTERACTION_RANGE = 0.005
 const STATUS_THRESHOLD = 0.5
 const AGGRESSION_THRESHOLD = 0.5
 const COOPERATION_THRESHOLD = 0.5
-const GENETIC_SIMILARITY_THRESHOLD = 0.3
+const GENETIC_SIMILARITY_THRESHOLD = 0.7
 
 const (
 	Reset  = "\033[0m"
@@ -18,4 +18,5 @@ const (
 	Purple = "\033[35m"
 	Cyan   = "\033[36m"
 	White  = "\033[37m"
+	Pink   = "\033[95m"
 )
