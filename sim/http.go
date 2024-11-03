@@ -5,14 +5,20 @@ import (
 	"net/http"
 )
 
+// HTTP Handlers
 func beingsHandler(w http.ResponseWriter, r *http.Request) {
-	//beingsLock.RLock()
-	//defer beingsLock.RUnlock()
+	state.mutex.RLock()
+	response := struct {
+		Generation int     `json:"generation"`
+		Beings     []Being `json:"beings"`
+	}{
+		Generation: state.Generation,
+		Beings:     state.Beings,
+	}
+	state.mutex.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(beings); err != nil {
-		http.Error(w, "Failed to encode beings", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {

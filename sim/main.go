@@ -11,154 +11,173 @@ import (
 const (
 	lifespan   = 200
 	numBeings  = 100
-	iterations = 500
-	turnPause  = 100 * time.Millisecond
+	iterations = 100000
+	turnPause  = 0 * time.Millisecond
+	bufferSize = 1000 // Buffer for channels
+	workerPool = 200  // Number of workers for processing beings
 )
 
-var (
-	beings     []Being      // Global beings slice
-	beingsLock sync.RWMutex // Mutex for safe concurrent access
-)
-
-func createBeings() []Being {
-	beings = make([]Being, numBeings)
-	for i := 0; i < numBeings; i++ {
-		beings[i] = *NewBeing(nil)
-		beings[i].state()
-	}
-	return beings
+type SimulationState struct {
+	Beings     []Being
+	Generation int
+	mutex      sync.RWMutex
 }
 
-func updateBeing(being Being, beingsAux []Being, results chan<- Being) {
-	// Update the being and get its status and children
-	alive, childs := being.update(beingsAux)
-	fmt.Println("Alive:", alive)
-	fmt.Println("Childs:", childs)
+type SimulationResult struct {
+	Being  Being
+	Alive  bool
+	Childs []Being
+}
 
-	// Send new child beings through the channel
-	if len(childs) > 0 {
-		fmt.Printf("New beings were born!\n")
-		for _, child := range childs {
-			fmt.Printf("Child %s\n", child.id)
-			results <- child // Send each new being through the channel
+// Global simulation state
+var state = &SimulationState{
+	Beings: make([]Being, 0, numBeings),
+}
+
+// Worker pool for processing beings
+func beingWorker(id int, jobs <-chan Being, results chan<- SimulationResult, beingsSnapshot []Being, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for being := range jobs {
+		alive, childs := being.update(beingsSnapshot)
+		results <- SimulationResult{
+			Being:  being,
+			Alive:  alive,
+			Childs: childs,
 		}
-		fmt.Printf("Being %s sent childs\n", being.id) // Log being update
 	}
-
-	// Send the current being back through the channel if it's still alive
-	if alive {
-		results <- being                            // Send the alive being back through the channel
-		fmt.Printf("Being %s is alive\n", being.id) // Log being update
-		being.state()                               // Call state method on the alive being
-	} else {
-		fmt.Printf("Being %s died\n", being.id) // Log if the being has died
-	}
-
-	fmt.Printf("Being %s updated\n", being.id) // Log being update
 }
 
-func updateBeings(results chan<- Being) {
-	var wg sync.WaitGroup
-	//beingsLock.RLock()         // Acquire a read lock
-	//defer beingsLock.RUnlock() // Ensure the lock is released when the function exits
+func createBeings() {
+	state.mutex.Lock()
+	defer state.mutex.Unlock()
 
-	beingsAux := make([]Being, len(beings))
-	copy(beingsAux, beings)
-
-	for _, being := range beings {
-		wg.Add(1) // Add to WaitGroup before launching goroutine
-		go func(b Being) {
-			defer wg.Done() // Ensure Done is called
-			updateBeing(b, beingsAux, results)
-		}(being) // Capture the current being in the closure
+	state.Beings = make([]Being, numBeings)
+	for i := 0; i < numBeings; i++ {
+		state.Beings[i] = *NewBeing(nil)
+		state.Beings[i].state()
 	}
-	fmt.Println("All beings updated")
-	fmt.Println(Red+"TOTAL BEINGS: ", len(beings))
+}
 
-	// Wait for all goroutines to finish
-	wg.Wait()
-	close(results) // Close the results channel after all goroutines finish
+func processSimulationResults(results <-chan SimulationResult) []Being {
+	aliveBeings := make([]Being, 0, numBeings*2) // Pre-allocate with room for growth
+
+	// Process results as they come in
+	for result := range results {
+		if result.Alive {
+			aliveBeings = append(aliveBeings, result.Being)
+		}
+		aliveBeings = append(aliveBeings, result.Childs...)
+	}
+
+	// Sort and trim population if needed
+	if len(aliveBeings) > 200 {
+		sort.Slice(aliveBeings, func(i, j int) bool {
+			return aliveBeings[i].status > aliveBeings[j].status
+		})
+		aliveBeings = aliveBeings[:200]
+	}
+
+	return aliveBeings
+}
+
+func updateBeings() []Being {
+	// Create buffered channels for better performance
+	jobs := make(chan Being, bufferSize)
+	results := make(chan SimulationResult, bufferSize)
+
+	// Create a snapshot of current beings for concurrent access
+	state.mutex.RLock()
+	beingsSnapshot := make([]Being, len(state.Beings))
+	copy(beingsSnapshot, state.Beings)
+	state.mutex.RUnlock()
+
+	// Start worker pool
+	var wg sync.WaitGroup
+	for i := 0; i < workerPool; i++ {
+		wg.Add(1)
+		go beingWorker(i, jobs, results, beingsSnapshot, &wg)
+	}
+
+	// Send jobs to workers
+	go func() {
+		for _, being := range beingsSnapshot {
+			jobs <- being
+		}
+		close(jobs)
+	}()
+
+	// Wait for all workers to finish in a separate goroutine
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	return processSimulationResults(results)
 }
 
 func RunSimulation() []Gene {
-	var aliveBeings []Being
+	state.Generation = 0
+	topGenes := make([]Gene, 0)
 
 	for i := 0; i < iterations; i++ {
-		fmt.Printf("Iteration %d\n", i)
+		state.Generation = i
 
-		results := make(chan Being) // Create a channel to receive results
-		go func() {
-			for result := range results {
-				fmt.Printf("Result %s\n", result.id)
-				aliveBeings = append(aliveBeings, result) // Collect alive beings
-			}
-		}()
+		// Update beings and get new population
+		aliveBeings := updateBeings()
 
-		// Update beings concurrently
-		updateBeings(results)
-
-		fmt.Println("All beings updated")
-
-		// Use a write lock to safely update the beings slice
-		//beingsLock.Lock()
-		if len(aliveBeings) >= 50 {
-			sort.Slice(aliveBeings, func(i, j int) bool {
-				return aliveBeings[i].status > aliveBeings[j].status
-			})
-			aliveBeings = aliveBeings[:50] // Limit the number of alive beings
-		}
-		beings = aliveBeings // Update the beings list
-		aliveBeings = nil    // Reset the alive beings list
-		//beingsLock.Unlock()
+		// Update global state
+		state.mutex.Lock()
+		state.Beings = aliveBeings
+		state.mutex.Unlock()
 
 		time.Sleep(turnPause)
 	}
 
-	var topGenes []Gene
-	sort.Slice(beings, func(i, j int) bool {
-		return beings[i].status > beings[j].status
+	// Process final results
+	state.mutex.RLock()
+	defer state.mutex.RUnlock()
+
+	sort.Slice(state.Beings, func(i, j int) bool {
+		return state.Beings[i].status > state.Beings[j].status
 	})
 
-	top10PercentCount := len(beings) / 10
-	top10Percent := beings[:top10PercentCount]
-	bottom10Percent := beings[len(beings)-top10PercentCount:]
+	// Get top 10%
+	top10PercentCount := len(state.Beings) / 10
+	top10Percent := state.Beings[:top10PercentCount]
 
 	for _, being := range top10Percent {
 		if being.status == 100 {
 			topGenes = append(topGenes, being.genes...)
 		}
-		fmt.Printf("Top Being %s | status: %.2f | genes: %v\n", being.id, being.status, being.genes)
 	}
 
-	for _, being := range bottom10Percent {
-		fmt.Printf("Bottom Being %s | status: %.2f\n", being.id, being.status)
-	}
+	fmt.Println("Top genes:" + fmt.Sprint(topGenes))
 
-	//analyse(topGenes)
 	return topGenes
 }
 
-func RunMultipleSimulations() {
-	winners := []Gene{}
-
-	for i := 0; i < iterations; i++ {
-		topGenes := RunSimulation()
-		winners = append(winners, topGenes...)
-		fmt.Printf(Purple+"Simulation %d\n", i)
-		//time.Sleep(100 * time.Millisecond)
-	}
-
-	fmt.Printf(Cyan+"Winners: %v\n", winners)
-	//analyse(winners)
-}
-
 func main() {
+	// Create initial population
 	createBeings()
+
+	// Set up HTTP server with improved routing
+	mux := http.NewServeMux()
+	mux.Handle("/beings", CorsMiddleware(http.HandlerFunc(beingsHandler)))
+
+	// Start simulation in background
 	go RunSimulation()
 
-	http.Handle("/beings", CorsMiddleware(http.HandlerFunc(beingsHandler)))
+	// Configure server with timeouts
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	fmt.Println("Server starting on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		fmt.Printf("Failed to start server: %v\n", err)
 	}
 }
