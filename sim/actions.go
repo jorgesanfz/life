@@ -58,12 +58,12 @@ func decision(a *Being, b *Being) ACTION {
 	}
 
 	// 3. Low Agreeableness and Low Genetic Similarity = ATTACK
-	if a.traits.Agreeableness < AGGRESSION_THRESHOLD && distance > GENETIC_SIMILARITY_THRESHOLD {
+	if a.traits.Behavior.Aggression > AGGRESSION_THRESHOLD && distance > GENETIC_SIMILARITY_THRESHOLD {
 		return ATTACK
 	}
 
 	// 4. High Cooperation but Low Status or High Distance = FLEE
-	if a.traits.Agreeableness > COOPERATION_THRESHOLD {
+	if a.traits.Behavior.Cooperation > COOPERATION_THRESHOLD {
 		return COOPERATE
 	} else {
 		return FLEE
@@ -80,7 +80,7 @@ func attack(a, b *Being) {
 		aChange = -0.5 * b.status
 		bChange = 0.25 * a.status
 	}
-	a.traits.Agreeableness -= 0.05
+	a.traits.Behavior.Cooperation -= 0.05
 	a.traits.NormalizeTraits()
 	a.updateStatus(aChange)
 	b.updateStatus(bChange)
@@ -116,8 +116,8 @@ func cooperate(a, b *Being) {
 }
 
 func bond(a, b *Being) {
-	a.traits.Agreeableness += 0.05
-	b.traits.Agreeableness += 0.025
+	a.traits.Behavior.Cooperation += 0.05
+	b.traits.Behavior.Cooperation += 0.025
 	a.traits.NormalizeTraits()
 	b.traits.NormalizeTraits()
 }

@@ -123,6 +123,7 @@ func (b *Being) MarshalJSON() ([]byte, error) {
 	}{
 		ID:       b.id,
 		Genes:    b.genes,
+		Traits:   b.traits,
 		Position: b.position,
 		Velocity: b.velocity,
 		Age:      b.age,

@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	lifespan   = 100
-	numBeings  = 10
-	iterations = 100
-	turnPause  = 1000 * time.Millisecond
+	lifespan   = 200
+	numBeings  = 100
+	iterations = 500
+	turnPause  = 100 * time.Millisecond
 )
 
 var (
@@ -42,9 +42,8 @@ func updateBeing(being Being, beingsAux []Being, results chan<- Being) {
 			fmt.Printf("Child %s\n", child.id)
 			results <- child // Send each new being through the channel
 		}
+		fmt.Printf("Being %s sent childs\n", being.id) // Log being update
 	}
-
-	fmt.Printf("Being %s sent childs\n", being.id) // Log being update
 
 	// Send the current being back through the channel if it's still alive
 	if alive {
@@ -90,6 +89,7 @@ func RunSimulation() []Gene {
 		results := make(chan Being) // Create a channel to receive results
 		go func() {
 			for result := range results {
+				fmt.Printf("Result %s\n", result.id)
 				aliveBeings = append(aliveBeings, result) // Collect alive beings
 			}
 		}()
@@ -101,6 +101,12 @@ func RunSimulation() []Gene {
 
 		// Use a write lock to safely update the beings slice
 		//beingsLock.Lock()
+		if len(aliveBeings) >= 50 {
+			/*sort.Slice(aliveBeings, func(i, j int) bool {
+				return aliveBeings[i].status > aliveBeings[j].status
+			})*/
+			aliveBeings = aliveBeings[:50] // Limit the number of alive beings
+		}
 		beings = aliveBeings // Update the beings list
 		aliveBeings = nil    // Reset the alive beings list
 		//beingsLock.Unlock()

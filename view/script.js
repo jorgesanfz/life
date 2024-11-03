@@ -31,11 +31,9 @@ function getRandomColor() {
 
 function getColorFromGenes(genes) {
   // Map aggression to red and cooperation to green
-  const red = Math.floor(genes.aggression * 255);
-  const blue = Math.floor(genes.cooperation * 255);
-  const green = Math.floor(
-    (1 - Math.abs(genes.aggression - genes.cooperation)) * 255
-  ); // Corrected variables
+  const red = Math.floor(genes.A * 255);
+  const blue = Math.floor(genes.B * 255);
+  const green = Math.floor((1 - Math.abs(genes.A - genes.B)) * 255); // Corrected variables
 
   console.log("Red:", red, "Green:", green, "Blue:", blue);
 
@@ -50,9 +48,9 @@ function getColorFromGenes(genes) {
 
 function getColorFromTraits(traits) {
   // Map aggression to red and cooperation to green
-  const red = Math.floor((1 - traits.aggreeableness) * 255);
-  const green = Math.floor(traits.aggreeableness * 255);
-  const blue = Math.floor(traits.conscientiousness * 255);
+  const red = Math.floor(traits.behavior.aggression * 255);
+  const green = Math.floor(traits.behavior.cooperation * 255);
+  const blue = Math.floor(traits.physical.strength * 255);
 
   console.log("Red:", red, "Green:", green, "Blue:", blue);
 
@@ -164,4 +162,4 @@ async function fetchDataAndDraw() {
 }
 
 // Call fetchDataAndDraw every second
-setInterval(fetchDataAndDraw, 50);
+setInterval(fetchDataAndDraw, 100);
