@@ -35,19 +35,20 @@ func NewBeing(genes Genes) *Being {
 	}
 }
 
-func (b *Being) update(beings []Being) bool {
+func (b *Being) update(beings []Being) (bool, []Being) {
 	b.age++
-	if b.age > lifespan || b.status < 5 {
-		return false
+	var childs []Being
+	if b.age > lifespan || b.status < 20 {
+		return false, childs
 	}
 	b.move()
 	for _, other := range beings {
 		child := Interact(b, &other)
 		if child != nil {
-			beings = append(beings, *child)
+			childs = append(childs, *child)
 		}
 	}
-	return true
+	return true, childs
 }
 
 func (b *Being) updateStatus(value float32) {
@@ -61,10 +62,6 @@ func (b *Being) updateStatus(value float32) {
 
 func (b *Being) state() {
 	fmt.Printf(Cyan+"Being %s: position: %v, velocity: %v, status: %v, age: %v\n", b.id, b.position, b.velocity, b.status, b.age)
-}
-
-func (b *Being) getGenes() Genes {
-	return b.genes
 }
 
 func (b *Being) move() {

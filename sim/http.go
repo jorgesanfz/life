@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -9,8 +10,15 @@ func beingsHandler(w http.ResponseWriter, r *http.Request) {
 	beingsLock.Lock()
 	defer beingsLock.Unlock()
 
+	// Create a copy of the beings slice
+	beingsCopy := make([]Being, len(beings))
+	copy(beingsCopy, beings)
+	fmt.Println(Red+"-----------------Beings copied----------------", len(beingsCopy))
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(beings)
+	if err := json.NewEncoder(w).Encode(beingsCopy); err != nil {
+		http.Error(w, "Failed to encode beings", http.StatusInternalServerError)
+	}
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {

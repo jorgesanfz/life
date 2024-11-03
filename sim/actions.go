@@ -15,6 +15,7 @@ const (
 )
 
 func Interact(a, b *Being) *Being {
+	var child *Being
 	if canInteract(a, b) {
 		fmt.Printf(Yellow+"Being %s is interacting with being %s\n", a.id, b.id)
 		switch decision(a, b) {
@@ -28,13 +29,12 @@ func Interact(a, b *Being) *Being {
 			cooperate(a, b)
 			fmt.Printf(Green+"Being %s is cooperating with being %s\n", a.id, b.id)
 		case REPRODUCE:
-			child := reproduce(a, b)
+			child = reproduce(a, b)
 			fmt.Printf(Pink+"Being %s and being %s are reproducing\n", a.id, b.id)
 			fmt.Printf(Green+"Child %s has genes %v\n", child.id, child.genes)
-			return child
 		}
 	}
-	return nil
+	return child
 }
 
 func canInteract(a, b *Being) bool {
@@ -45,13 +45,15 @@ func decision(a *Being, b *Being) ACTION {
 	// Calculate genetic distance between two beings
 	distance := CalculateEuclideanDistance(a.genes, b.genes)
 
-	// 1. High Status and Genetic Closeness = REPRODUCE
-	if a.status > STATUS_THRESHOLD && b.status > STATUS_THRESHOLD && distance <= GENETIC_SIMILARITY_THRESHOLD {
-		return REPRODUCE
-	}
-
-	// 2. High Genetic Similarity = COOPERATE
+	// 1. High Genetic Similarity = COOPERATE
 	if distance <= GENETIC_SIMILARITY_THRESHOLD {
+		// 2. High Status and Genetic Closeness = REPRODUCE
+		if distance > 0 && math.Abs(float64(a.status)-float64(b.status)) < STATUS_THRESHOLD {
+			fmt.Printf(Orange+"Genetic distance between being %s and being %s is %.2f\n", a.id, b.id, distance)
+			fmt.Printf(Orange+"Genetics: being %s: %v, being %s: %v\n", a.id, a.genes, b.id, b.genes)
+			fmt.Printf(Orange+"Status: being %s: %.2f, being %s: %.2f\n", a.id, a.status, b.id, b.status)
+			return REPRODUCE
+		}
 		return COOPERATE
 	}
 
@@ -72,11 +74,11 @@ func attack(a, b *Being) {
 	var aChange float32
 	var bChange float32
 	if a.strength > b.strength {
-		aChange = 0.1 * b.status
-		bChange = -0.1 * a.status
+		aChange = 0.25 * b.status
+		bChange = -0.5 * a.status
 	} else {
-		aChange = -0.1 * b.status
-		bChange = 0.1 * a.status
+		aChange = -0.5 * b.status
+		bChange = 0.25 * a.status
 	}
 	a.updateStatus(aChange)
 	b.updateStatus(bChange)
@@ -103,6 +105,6 @@ func reproduce(a, b *Being) *Being {
 }
 
 func cooperate(a, b *Being) {
-	a.updateStatus(0.04 * b.status)
-	b.updateStatus(0.04 * a.status)
+	a.updateStatus(0.01 * b.status)
+	b.updateStatus(0.01 * a.status)
 }

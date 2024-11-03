@@ -7,8 +7,8 @@ canvas.height = window.innerHeight;
 
 // Resize canvas when the window is resized
 window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth * 0.9;
+  canvas.height = window.innerHeight * 0.9;
 });
 
 const size_factor = 0.5;
@@ -146,4 +146,4 @@ async function fetchDataAndDraw() {
 }
 
 // Call fetchDataAndDraw every second
-setInterval(fetchDataAndDraw, 200);
+setInterval(fetchDataAndDraw, 50);
