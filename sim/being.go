@@ -42,6 +42,7 @@ func (b *Being) update(beings []Being) (bool, []Being) {
 		return false, childs
 	}
 	b.move()
+	fmt.Println("Being ", b.id, " is moving")
 	for _, other := range beings {
 		child := Interact(b, &other)
 		if child != nil {

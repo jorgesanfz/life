@@ -10,55 +10,101 @@ import (
 
 const (
 	lifespan   = 100
-	numBeings  = 200
+	numBeings  = 100
 	iterations = 100
 	turnPause  = 1000 * time.Millisecond
 )
 
 var (
-	beings     []Being
-	beingsLock sync.Mutex
+	beings     []Being      // Global beings slice
+	beingsLock sync.RWMutex // Mutex for safe concurrent access
 )
 
 func createBeings() []Being {
-	beings := make([]Being, numBeings)
+	beings = make([]Being, numBeings)
 	for i := 0; i < numBeings; i++ {
 		beings[i] = *NewBeing(Genes{})
+		beings[i].state()
 	}
 	return beings
 }
 
-func updateBeings(beings *[]Being) []Being {
-	var aliveBeings []Being
+func updateBeing(being Being, beingsAux []Being, results chan<- Being) {
+	// Update the being and get its status and children
+	alive, childs := being.update(beingsAux)
+	fmt.Println("Alive:", alive)
+	fmt.Println("Childs:", childs)
 
-	for i := 0; i < len(*beings); i++ {
-		beingsLock.Lock()
-		being := (*beings)[i]
-		alive, _ := being.update(*beings)
-		/*if len(childs) > 0 {
-			fmt.Print(Green + "New beings were born!\n")
-			*beings = append(*beings, childs...)
-		}*/
-		if alive {
-			aliveBeings = append(aliveBeings, being)
-			being.state()
-		} else {
-			fmt.Printf(Red+"Being %s died\n", being.id)
+	// Send new child beings through the channel
+	if len(childs) > 0 {
+		fmt.Printf("New beings were born!\n")
+		for _, child := range childs {
+			fmt.Printf("Child %s\n", child.id)
+			results <- child // Send each new being through the channel
 		}
-		beingsLock.Unlock()
-		time.Sleep(10 * time.Millisecond)
 	}
 
-	fmt.Printf("Number of beings alive: %d\n", len(aliveBeings))
-	return aliveBeings
+	fmt.Printf("Being %s sent childs\n", being.id) // Log being update
+
+	// Send the current being back through the channel if it's still alive
+	if alive {
+		results <- being                            // Send the alive being back through the channel
+		fmt.Printf("Being %s is alive\n", being.id) // Log being update
+		being.state()                               // Call state method on the alive being
+	} else {
+		fmt.Printf("Being %s died\n", being.id) // Log if the being has died
+	}
+
+	fmt.Printf("Being %s updated\n", being.id) // Log being update
+}
+
+func updateBeings(results chan<- Being) {
+	var wg sync.WaitGroup
+	beingsLock.RLock()         // Acquire a read lock
+	defer beingsLock.RUnlock() // Ensure the lock is released when the function exits
+
+	beingsAux := make([]Being, len(beings))
+	copy(beingsAux, beings)
+
+	for _, being := range beings {
+		wg.Add(1) // Add to WaitGroup before launching goroutine
+		go func(b Being) {
+			defer wg.Done() // Ensure Done is called
+			updateBeing(b, beingsAux, results)
+		}(being) // Capture the current being in the closure
+	}
+	fmt.Println("All beings updated")
+	fmt.Println(Red+"TOTAL BEINGS: ", len(beings))
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+	close(results) // Close the results channel after all goroutines finish
 }
 
 func RunSimulation() []Genes {
+	var aliveBeings []Being
+
 	for i := 0; i < iterations; i++ {
+		fmt.Printf("Iteration %d\n", i)
+
+		results := make(chan Being) // Create a channel to receive results
+		go func() {
+			for result := range results {
+				aliveBeings = append(aliveBeings, result) // Collect alive beings
+			}
+		}()
+
+		// Update beings concurrently
+		updateBeings(results)
+
+		fmt.Println("All beings updated")
+
+		// Use a write lock to safely update the beings slice
 		//beingsLock.Lock()
-		beings = updateBeings(&beings)
+		beings = aliveBeings // Update the beings list
+		aliveBeings = nil    // Reset the alive beings list
 		//beingsLock.Unlock()
-		fmt.Printf(Blue+"Iteration %d\n", i)
+
 		time.Sleep(turnPause)
 	}
 
@@ -100,7 +146,7 @@ func RunMultipleSimulations() {
 }
 
 func main() {
-	beings = createBeings()
+	createBeings()
 	go RunSimulation()
 
 	http.Handle("/beings", CorsMiddleware(http.HandlerFunc(beingsHandler)))

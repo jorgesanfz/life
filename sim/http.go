@@ -2,21 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
 func beingsHandler(w http.ResponseWriter, r *http.Request) {
-	beingsLock.Lock()
-	defer beingsLock.Unlock()
-
-	// Create a copy of the beings slice
-	beingsCopy := make([]Being, len(beings))
-	copy(beingsCopy, beings)
-	fmt.Println(Red+"-----------------Beings copied----------------", len(beingsCopy))
+	beingsLock.RLock()
+	defer beingsLock.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(beingsCopy); err != nil {
+	if err := json.NewEncoder(w).Encode(beings); err != nil {
 		http.Error(w, "Failed to encode beings", http.StatusInternalServerError)
 	}
 }
